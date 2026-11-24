@@ -5,11 +5,50 @@ import { Lab, LAB_INFO } from '../labs/Labs';
 import type { LabId } from '../types';
 import { type State, emptyState, sanitize } from '../lib/progress';
 import type { StoreKind } from '../lib/storage';
-import { Bubble, Lido } from './Mascot';
+import { Bubble, Lido, Logo } from './Mascot';
+import { APK_URL, RELEASES_URL, isNativeApp, useInstallPrompt } from '../lib/platform';
 import { Ltr, bidi } from './Rich';
 import {
   IconArrowNext, IconArrowPrev, IconBook, IconChat, IconCloud, IconFlask, IconLink, IconSearch, IconShield, IconWarn,
 } from './Icons';
+
+// ───────────────────────────── Android app
+
+export function AppCard() {
+  const install = useInstallPrompt();
+  if (isNativeApp()) {
+    return (
+      <section className="card app-card">
+        <span className="app-icon"><Logo size={64} /></span>
+        <div>
+          <h2>تطبيق أندرويد</h2>
+          <p className="muted">أنت تستعمل التطبيق. للتحديث، حمّل أحدث نسخة وثبّتها فوق الحالية؛ يبقى تقدّمك محفوظًا.</p>
+        </div>
+        <div className="app-actions">
+          <a className="btn-secondary" href={RELEASES_URL} target="_blank" rel="noreferrer">صفحة أحدث نسخة</a>
+        </div>
+      </section>
+    );
+  }
+  return (
+    <section className="card app-card">
+      <span className="app-icon"><Logo size={64} /></span>
+      <div>
+        <h2>حمّل دارة على هاتف أندرويد</h2>
+        <ol>
+          <li>اضغط «حمّل التطبيق» من هاتفك.</li>
+          <li>افتح الملف <bdi dir="ltr">dara.apk</bdi> بعد اكتمال التحميل.</li>
+          <li>إذا طُلب منك، اسمح لمتصفحك بتثبيت التطبيقات (Install unknown apps)، ثم اضغط «تثبيت».</li>
+        </ol>
+      </div>
+      <div className="app-actions">
+        <a className="btn-primary" href={APK_URL} target="_blank" rel="noreferrer">حمّل التطبيق (APK)</a>
+        {install && <button type="button" className="btn-secondary" onClick={install}>أو ثبّت نسخة الويب على هذا الجهاز</button>}
+      </div>
+      <p className="app-note">التطبيق يعمل دون إنترنت. تقدّمك في الموقع لا ينتقل تلقائيًا إلى التطبيق: انسخ «النسخة الاحتياطية» من صفحة «حسابي» واسترجعها في التطبيق.</p>
+    </section>
+  );
+}
 
 // ───────────────────────────── Library
 
@@ -23,6 +62,7 @@ export function Library({ go }: { go: (h: string) => void }) {
   return (
     <div className="page">
       <h1 className="page-title">المكتبة</h1>
+      <AppCard />
 
       <section className="lib-section">
         <h2><IconFlask size={22} /> المختبرات</h2>
@@ -221,6 +261,8 @@ export function Profile({ state, setState, store, saveStatus, go }: {
         <button type="button" className="btn-secondary" disabled={!importText.trim()} onClick={doImport}>استرجع التقدّم</button>
         {importMsg && <p className={`msg ${importMsg.ok ? 'ok' : 'bad'}`} role="status">{importMsg.text}</p>}
       </section>
+
+      <AppCard />
 
       <section className="card danger">
         <h2>البدء من جديد</h2>

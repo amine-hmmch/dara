@@ -31,6 +31,20 @@ npm run build          # static site in dist/ (any static host: Cloudflare Pages
 npm run build:single   # one self-contained HTML file in dist-single/
 ```
 
+## Android app and installable website
+
+- **APK**: `.github/workflows/android.yml` builds the app with Capacitor on every push to
+  `main` and publishes it as a GitHub Release. The latest APK is always at
+  https://github.com/amine-hmmch/dara/releases/latest/download/dara.apk
+- **Signing**: by default the APK is signed with `android/app/dara-public.keystore`. This key
+  is committed on purpose, so every build installs as an update. It is **not secret**. To use
+  a private key instead, add the repository secrets `ANDROID_KEYSTORE_B64` (base64 of a
+  keystore), `ANDROID_KEYSTORE_PASSWORD`, and optionally `ANDROID_KEY_ALIAS` and
+  `ANDROID_KEY_PASSWORD`. Switching keys requires uninstalling the app once (back up first).
+- **Installable website**: `public/manifest.webmanifest` and `public/sw.js` let the GitHub
+  Pages site be installed from Chrome and work offline. Fonts are bundled, not loaded from Google.
+- Local Android build (needs the Android SDK): `npm run build && npx cap sync android && cd android && ./gradlew assembleRelease`
+
 ## Layout
 
 ```
