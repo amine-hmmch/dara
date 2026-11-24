@@ -88,6 +88,10 @@ describe('curriculum content', () => {
     }
   });
 
+  it('keeps glossary definitions free of lesson markup (they render as plain text)', () => {
+    for (const t of TERMS) expect(/\*\*|\[\[|\{\{/.test(t.def), t.id).toBe(false);
+  });
+
   it('has unique glossary ids', () => {
     expect(new Set(TERMS.map((t) => t.id)).size).toBe(TERMS.length);
   });

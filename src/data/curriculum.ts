@@ -1,6 +1,7 @@
 import type { Level, Lesson, Module, QuestionStep } from '../types';
 import { LEVEL0_MODULES } from './lessons/level0';
 import { LEVEL1_MODULES } from './lessons/level1';
+import { LEVEL2_MODULES } from './lessons/level2';
 
 const planned = (id: string, title: string, summary: string, topics: string[], safety = false): Module => ({
   id,
@@ -33,14 +34,7 @@ export const LEVELS: Level[] = [
     title: 'المكوّنات',
     subtitle: 'تعرّف على كل قطعة قبل أن تصلحها.',
     tier: 'المستوى A–B: حتى 12 V مع تحديد التيار',
-    modules: [
-      planned('m2-resistors', 'المقاومات بالتفصيل', 'الألوان، التفاوت، القدرة، المقاومات المتغيّرة.', ['شيفرة الألوان', 'التفاوت والسلاسل E12/E24', 'المقاومة المتغيّرة والضوئية والحرارية']),
-      planned('m2-capacitors', 'المكثّفات', 'تخزين الشحنة، الشحن والتفريغ.', ['السعة والفاراد', 'الشحن والتفريغ RC', 'أنواع المكثّفات والقطبية', 'خطر المكثّفات المشحونة']),
-      planned('m2-inductors', 'الوشائع والمرحّلات', 'المغناطيسية في الدارات.', ['الوشيعة والحثّ', 'المرحّل (relais)', 'ثنائي الحماية (roue libre)']),
-      planned('m2-diodes', 'الثنائيات و LED', 'تيار في اتجاه واحد.', ['الثنائي والتقويم', 'ثنائي زينر', 'LED بالتفصيل']),
-      planned('m2-transistors', 'الترانزستور كمفتاح', 'BJT و MOSFET.', ['BJT كمفتاح', 'MOSFET كمفتاح', 'قيادة حمل بمتحكّم']),
-      planned('m2-datasheets', 'قراءة أوراق البيانات', 'القيم القصوى والمنحنيات.', ['Absolute maximum ratings', 'المنحنيات المميزة', 'البحث عن بديل لمكوّن']),
-    ],
+    modules: LEVEL2_MODULES,
   },
   {
     n: 3,

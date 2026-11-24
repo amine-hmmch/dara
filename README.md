@@ -7,15 +7,16 @@ review. Branding, mascot (Lido) and implementation are original.
 
 ## What v1 contains
 
-- **Curriculum map** of 7 levels. Levels 0–1 are fully written: 13 modules, 15 lessons,
-  each module ending with a mastery check. Levels 2–6 are shown as "in preparation", with
+- **Curriculum map** of 7 levels. Levels 0–2 are fully written: 20 modules, 25 lessons,
+  each module ending with a mastery check. Levels 3–6 are shown as "in preparation", with
   their planned topics listed.
 - **Mastery gates**: a module opens the next one at 80 %; safety modules need 100 %.
 - **Spaced review** (Leitner boxes at 1, 3, 7, 16, 35 and 70 days) of missed questions
   and new glossary terms.
-- **4 interactive labs**: Ohm's law, the LED resistor (the LED burns out above ~30 mA),
-  series/parallel (solved by a nodal-analysis engine), and a multimeter trainer where
-  wrong connections blow the meter's fuse.
+- **7 interactive labs**: Ohm's law, the LED resistor (the LED burns out above ~30 mA),
+  series/parallel (solved by a nodal-analysis engine), a multimeter trainer where wrong
+  connections blow the meter's fuse, a resistor colour-code decoder with a challenge mode,
+  RC charging/discharging, and a BJT switch that must saturate with worst-case β.
 - **Trilingual glossary** (Arabic · French · English), with optional Darija explanations.
 - **Progress storage**: a per-person cloud store when running as a Claude artifact,
   otherwise localStorage, plus a copy/paste JSON backup.
@@ -54,6 +55,7 @@ src/
   data/curriculum.ts       levels, modules, lookups
   data/lessons/level0.ts   foundations and safety
   data/lessons/level1.ts   DC circuits
+  data/lessons/level2.ts   components (bench supply safety, R, C, L/relays, diodes, transistors, datasheets)
   lib/circuit.ts           MNA DC solver, E12 values, SI formatting
   lib/srs.ts               spaced repetition, streaks
   lib/progress.ts          state, unlock rules, transitions (pure functions)

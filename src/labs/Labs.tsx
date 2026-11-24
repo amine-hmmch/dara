@@ -12,6 +12,9 @@ export const LAB_INFO: Record<LabId, { title: string; summary: string; tier: str
   led: { title: 'مختبر LED ومقاومه', summary: 'اختر المقاوم الذي يحمي LED.', tier: 'محاكاة' },
   'series-parallel': { title: 'التوالي والتوازي', summary: 'كيف يتقاسم المقاومان الجهد أو التيار.', tier: 'محاكاة' },
   multimeter: { title: 'مدرّب الملتيمتر', summary: 'وصّل الجهاز بشكل صحيح، وشاهد عواقب الخطأ.', tier: 'محاكاة' },
+  'color-code': { title: 'فكّ ألوان المقاومات', summary: 'ركّب الألوان واقرأ القيمة، ثم تحدَّ نفسك.', tier: 'محاكاة' },
+  rc: { title: 'شحن المكثّف وتفريغه', summary: 'منحنى RC والثابت الزمني τ.', tier: 'محاكاة' },
+  transistor: { title: 'الترانزستور كمفتاح', summary: 'اختر مقاوم القاعدة ليُشبع الترانزستور حتى في أسوأ حالة.', tier: 'محاكاة' },
 };
 
 export function Lab({ id, ...p }: LabProps & { id: LabId }) {
@@ -20,6 +23,9 @@ export function Lab({ id, ...p }: LabProps & { id: LabId }) {
     case 'led': return <LedLab {...p} />;
     case 'series-parallel': return <SeriesParallelLab {...p} />;
     case 'multimeter': return <MultimeterLab {...p} />;
+    case 'color-code': return <ColorCodeLab {...p} />;
+    case 'rc': return <RcLab {...p} />;
+    case 'transistor': return <TransistorLab {...p} />;
   }
 }
 
@@ -397,6 +403,287 @@ function MultimeterLab({ goal, onGoal, onInteract }: LabProps) {
           <li key={k} className={done.has(k) ? 'done' : ''}>{done.has(k) ? <IconCheck size={16} /> : null}{t}</li>
         ))}
       </ul>
+    </div>
+  );
+}
+
+
+// ───────────────────────────── Colour code
+
+const COLORS = [
+  { name: 'أسود', hex: '#1C1C1C' }, { name: 'بنّي', hex: '#7A4A24' }, { name: 'أحمر', hex: '#D0312D' },
+  { name: 'برتقالي', hex: '#E87D1E' }, { name: 'أصفر', hex: '#E8C200' }, { name: 'أخضر', hex: '#2E8B3E' },
+  { name: 'أزرق', hex: '#2A62C9' }, { name: 'بنفسجي', hex: '#7B3FA0' }, { name: 'رمادي', hex: '#8A8A8A' },
+  { name: 'أبيض', hex: '#F2F2F2' },
+];
+const GOLD = { name: 'ذهبي', hex: '#C9A227' };
+const SILVER = { name: 'فضي', hex: '#B8B8B8' };
+// multiplier index: 0..6 → 10^0..10^6, 7 → gold ×0.1, 8 → silver ×0.01
+const MULTS = [...COLORS.slice(0, 7).map((c, i) => ({ ...c, f: 10 ** i })), { ...GOLD, f: 0.1 }, { ...SILVER, f: 0.01 }];
+const TOLS = [{ ...COLORS[1], t: 1 }, { ...COLORS[2], t: 2 }, { ...GOLD, t: 5 }, { ...SILVER, t: 10 }];
+
+/** "4.7k", "4,7 k", "470", "1M" → ohms; NaN if unreadable. */
+export function parseOhms(input: string): number {
+  const t = input.trim().replace(/\s/g, '').replace(',', '.').replace(/Ω|ohms?/gi, '');
+  const m = /^(\d*\.?\d+)([kKmM]?)$/.exec(t);
+  if (!m) return NaN;
+  const mult = m[2] === 'k' || m[2] === 'K' ? 1e3 : m[2] === 'M' ? 1e6 : m[2] === 'm' ? 1e-3 : 1;
+  return Number(m[1]) * mult;
+}
+
+/** Bands (digit1, digit2, multiplier index) for an E12 value ≥ 10 Ω. */
+export function bandsFor(ohms: number): [number, number, number] {
+  let exp = Math.floor(Math.log10(ohms)) - 1;
+  let two = Math.round(ohms / 10 ** exp);
+  if (two >= 100) { two = Math.round(two / 10); exp += 1; }
+  return [Math.floor(two / 10), two % 10, exp];
+}
+
+function ResistorSvg({ bands }: { bands: string[] }) {
+  return (
+    <svg viewBox="0 0 320 90" className="lab-svg" direction="ltr" role="img" aria-label="مقاوم">
+      <path d="M16 45H72M248 45H304" className="fig-wire" />
+      <rect x="72" y="22" width="176" height="46" rx="20" className="fig-resbody" />
+      {bands.map((c, i) => <rect key={i} x={i === 3 ? 212 : 98 + i * 28} y="22" width="15" height="46" fill={c} stroke="rgb(0 0 0 / .15)" />)}
+    </svg>
+  );
+}
+
+function Swatches({ label, items, value, onChange }: { label: string; items: { name: string; hex: string }[]; value: number; onChange: (i: number) => void }) {
+  return (
+    <div className="swatch-row">
+      <span className="control-label">{label}</span>
+      <div className="swatches" role="radiogroup" aria-label={label}>
+        {items.map((c, i) => (
+          <button key={c.name} type="button" role="radio" aria-checked={value === i} aria-label={c.name} title={c.name}
+            className={`swatch ${value === i ? 'on' : ''}`} style={{ background: c.hex }} onClick={() => onChange(i)} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+const CHALLENGE_VALUES = E12.filter((r) => r >= 10 && r <= 1000000);
+
+function ColorCodeLab({ goal, onGoal, onInteract }: LabProps) {
+  const [d1, setD1] = useState(4);
+  const [d2, setD2] = useState(7);
+  const [mi, setMi] = useState(2);
+  const [ti, setTi] = useState(2);
+  const [challenge, setChallenge] = useState<number | null>(null);
+  const [answer, setAnswer] = useState('');
+  const [verdict, setVerdict] = useState<{ ok: boolean; text: string } | null>(null);
+  const [streak, setStreak] = useState(0);
+  const [reached, setReached] = useState(false);
+  const touch = <T,>(f: (v: T) => void) => (v: T) => { f(v); onInteract?.(); };
+
+  const value = (d1 * 10 + d2) * MULTS[mi].f;
+  const tol = TOLS[ti].t;
+  const target = goal?.type === 'color-streak' ? goal.count : 3;
+
+  const newChallenge = () => {
+    setChallenge(CHALLENGE_VALUES[Math.floor(Math.random() * CHALLENGE_VALUES.length)]);
+    setAnswer('');
+    setVerdict(null);
+    onInteract?.();
+  };
+  const check = () => {
+    if (challenge === null) return;
+    const x = parseOhms(answer);
+    if (Number.isNaN(x)) { setVerdict({ ok: false, text: 'اكتب القيمة بالأوم، مثل 4700 أو 4.7k.' }); return; }
+    const ok = Math.abs(x - challenge) <= challenge * 0.001;
+    const n = ok ? streak + 1 : 0;
+    setStreak(n);
+    setVerdict({ ok, text: ok ? 'صحيح.' : `ليس تمامًا: القيمة ${si(challenge, 'Ω')}.` });
+    if (ok && n >= target && !reached) { setReached(true); onGoal?.(); }
+  };
+
+  const cb = challenge !== null ? bandsFor(challenge) : null;
+  return (
+    <div className="lab">
+      {challenge === null ? (
+        <>
+          <ResistorSvg bands={[COLORS[d1].hex, COLORS[d2].hex, MULTS[mi].hex, TOLS[ti].hex]} />
+          <div className="lab-readouts row">
+            <Readout label="القيمة" value={si(value, 'Ω')} tone="main" />
+            <Readout label="التفاوت" value={`±${tol} %`} />
+            <Readout label="المجال" value={`${si(value * (1 - tol / 100), 'Ω')} – ${si(value * (1 + tol / 100), 'Ω')}`} />
+          </div>
+          <div className="lab-controls">
+            <Swatches label="الرقم الأول" items={COLORS.slice(1)} value={d1 - 1} onChange={touch((i: number) => setD1(i + 1))} />
+            <Swatches label="الرقم الثاني" items={COLORS} value={d2} onChange={touch(setD2)} />
+            <Swatches label="المضاعِف" items={MULTS} value={mi} onChange={touch(setMi)} />
+            <Swatches label="التفاوت" items={TOLS} value={ti} onChange={touch(setTi)} />
+          </div>
+          <button type="button" className="btn-secondary" onClick={newChallenge}>تحدٍّ: اقرأ مقاومًا عشوائيًا</button>
+        </>
+      ) : (
+        <>
+          <ResistorSvg bands={[COLORS[cb![0]].hex, COLORS[cb![1]].hex, MULTS[cb![2]].hex, GOLD.hex]} />
+          <form className="challenge" onSubmit={(e) => { e.preventDefault(); verdict ? newChallenge() : check(); }}>
+            <label className="numeric-field">
+              <span className="sr-only">القيمة</span>
+              <input dir="ltr" value={answer} onChange={(e) => setAnswer(e.target.value)} placeholder="4.7k" disabled={!!verdict} autoComplete="off" />
+              <Ltr>Ω</Ltr>
+            </label>
+            <button type="submit" className="btn-primary">{verdict ? 'التالي' : 'تحقّق'}</button>
+          </form>
+          {verdict && <p className={`lab-status ${verdict.ok ? 'ok' : 'warn'}`}>{bidi(verdict.text)}</p>}
+          <p className="muted">يمكنك الكتابة بالأوم (4700) أو بالبادئة (4.7k، 1M).</p>
+          <button type="button" className="btn-ghost" onClick={() => { setChallenge(null); setVerdict(null); }}>العودة إلى المفكّك</button>
+        </>
+      )}
+      <p className={`lab-goal ${reached ? 'done' : ''}`}>
+        {reached ? <IconCheck size={18} /> : null}
+        {goal?.type === 'color-streak' ? <>الهدف: {target} قراءات صحيحة متتالية في وضع التحدّي. </> : null}
+        السلسلة الحالية: <bdi>{streak}</bdi>
+      </p>
+    </div>
+  );
+}
+
+// ───────────────────────────── RC
+
+const CAPS = [10e-6, 47e-6, 100e-6, 220e-6, 470e-6, 1000e-6];
+const uF = (c: number) => `${Math.round(c * 1e6)} µF`;
+
+function RcLab({ onInteract }: LabProps) {
+  const [r, setR] = useState(10000);
+  const [ci, setCi] = useState(5);
+  const [mode, setMode] = useState<'charge' | 'discharge'>('charge');
+  const [k, setK] = useState(1);
+  const touch = <T,>(f: (v: T) => void) => (v: T) => { f(v); onInteract?.(); };
+  const U = 9;
+  const c = CAPS[ci];
+  const tau = r * c;
+  const v = (x: number) => (mode === 'charge' ? U * (1 - Math.exp(-x)) : U * Math.exp(-x));
+  const W = 300, H = 150, x0 = 34, y0 = 12, pw = W - x0 - 10, ph = H - y0 - 26;
+  const X = (x: number) => x0 + (x / 5) * pw;
+  const Y = (volts: number) => y0 + ph - (volts / U) * ph;
+  const d = Array.from({ length: 101 }, (_, i) => i * 0.05).map((x, i) => `${i ? 'L' : 'M'}${X(x).toFixed(1)} ${Y(v(x)).toFixed(1)}`).join('');
+  return (
+    <div className="lab">
+      <Segmented label="الوضع" value={mode} options={[['charge', 'شحن'], ['discharge', 'تفريغ']]} onChange={touch(setMode)} />
+      <div className="lab-stage">
+        <svg viewBox={`0 0 ${W} ${H}`} className="lab-svg" direction="ltr" role="img" aria-label="منحنى جهد المكثّف">
+          {[0, 0.63, 1].map((f) => <line key={f} x1={x0} x2={x0 + pw} y1={Y(U * f)} y2={Y(U * f)} className="chart-grid" />)}
+          {[1, 2, 3, 4, 5].map((n) => (
+            <g key={n}>
+              <line x1={X(n)} x2={X(n)} y1={y0} y2={y0 + ph} className="chart-grid" />
+              <text x={X(n)} y={H - 8} className="fig-small" textAnchor="middle">{n}τ</text>
+            </g>
+          ))}
+          <text x={x0 - 6} y={Y(U) + 4} className="fig-small" textAnchor="end">9 V</text>
+          <text x={x0 - 6} y={Y(U * 0.63) + 4} className="fig-small" textAnchor="end">63%</text>
+          <text x={x0 - 6} y={Y(0) + 4} className="fig-small" textAnchor="end">0</text>
+          <path d={d} className="chart-line" />
+          <line x1={X(k)} x2={X(k)} y1={y0} y2={y0 + ph} className="chart-cursor" />
+          <circle cx={X(k)} cy={Y(v(k))} r="5" className="chart-dot" />
+        </svg>
+        <div className="lab-readouts">
+          <Readout label="الثابت الزمني τ" value={si(tau, 's')} tone="main" />
+          <Readout label="جهد المكثّف" value={`${v(k).toFixed(2)} V`} />
+          <Readout label="الزمن" value={`${si(k * tau, 's')} (${k.toFixed(2)}τ)`} />
+        </div>
+      </div>
+      <div className="lab-equation" dir="ltr">τ = R × C = {si(r, 'Ω')} × {uF(c)} = <strong>{si(tau, 's')}</strong></div>
+      <div className="lab-controls">
+        <Slider label="الزمن" value={k} min={0} max={5} step={0.05} onChange={touch(setK)} display={`${k.toFixed(2)}τ`} />
+        <RSlider label="R" value={r} onChange={touch(setR)} range={E12.filter((x) => x >= 1000 && x <= 100000)} />
+        <Segmented label="C" value={String(ci)} options={CAPS.map((x, i) => [String(i), uF(x)] as [string, string])} onChange={touch((s: string) => setCi(Number(s)))} />
+      </div>
+    </div>
+  );
+}
+
+// ───────────────────────────── Transistor switch
+
+const LOADS = {
+  led: { name: 'LED ومقاوم 330 Ω', rl: 330, vd: 2 },
+  relay: { name: 'وشيعة مرحّل 9 V (160 Ω)', rl: 160, vd: 0 },
+};
+type LoadKey = keyof typeof LOADS;
+
+export function bjtSwitch(vin: number, rb: number, beta: number, load: { rl: number; vd: number }, vcc = 9) {
+  const vbe = 0.7, vsat = 0.2;
+  const ib = vin > vbe ? (vin - vbe) / rb : 0;
+  const need = (vcc - load.vd - vsat) / load.rl;
+  if (ib === 0) return { ib, ic: 0, vce: vcc - load.vd, p: 0, state: 'off' as const, need, overdrive: 0 };
+  const avail = beta * ib;
+  if (avail >= need) return { ib, ic: need, vce: vsat, p: vsat * need, state: 'sat' as const, need, overdrive: avail / need };
+  const vce = vcc - load.vd - avail * load.rl;
+  return { ib, ic: avail, vce, p: vce * avail, state: 'active' as const, need, overdrive: avail / need };
+}
+
+function TransistorLab({ goal, onGoal, onInteract }: LabProps) {
+  const [vin, setVin] = useState<'0' | '3.3' | '5'>('5');
+  const [rb, setRb] = useState(47000);
+  const [beta, setBeta] = useState<'110' | '300'>('300');
+  const [load, setLoad] = useState<LoadKey>('relay');
+  const [reached, setReached] = useState(false);
+  const touch = <T,>(f: (v: T) => void) => (v: T) => { f(v); onInteract?.(); };
+
+  const L = LOADS[load];
+  const s = bjtSwitch(Number(vin), rb, Number(beta), L);
+  const pinTooHigh = s.ib > 0.02;
+  const worstOk = beta === '110' && s.state === 'sat' && !pinTooHigh;
+  useEffect(() => {
+    if (goal?.type === 'bjt-saturated-worst' && worstOk && !reached) { setReached(true); onGoal?.(); }
+  }, [worstOk, reached, goal, onGoal]);
+
+  const level = s.need ? s.ic / s.need : 0;
+  const msg = s.state === 'off'
+    ? { tone: '', text: 'لا تيار في القاعدة: الترانزستور مطفأ، والحمل لا يعمل.' }
+    : s.state === 'sat'
+      ? { tone: 'ok', text: `مُشبع: مفتاح مغلق جيد. الهامش ×${s.overdrive.toFixed(1)}${s.overdrive < 2 ? ' (ضيّق؛ الأفضل ×2 على الأقل)' : ''}.` }
+      : { tone: 'warn', text: `غير مُشبع: الحمل يأخذ ${Math.round(level * 100)} % فقط من تياره، والترانزستور يبدّد ${si(s.p, 'W')} حرارة.` };
+  const relayOn = load === 'relay' && level > 0.75;
+
+  return (
+    <div className="lab">
+      <div className="lab-stage">
+        <svg viewBox="0 0 320 170" className="lab-svg" direction="ltr" role="img" aria-label="ترانزستور NPN يقود حملًا">
+          <text x="200" y="16" className="fig-small" textAnchor="middle">+9 V</text>
+          <path d="M200 22V34M200 74V92" className="fig-wire" />
+          <Flow d="M200 26V160" current={s.ic} maxCurrent={0.08} />
+          <rect x="176" y="34" width="48" height="40" rx="8" className={load === 'relay' && relayOn ? 'fig-box-strong' : 'fig-box'} />
+          {load === 'led'
+            ? <circle cx="200" cy="54" r={8 + 8 * level} fill="#E5483B" opacity={0.15 + 0.75 * level} />
+            : <text x="200" y="59" className="fig-small" textAnchor="middle">{relayOn ? 'ON' : 'RELAY'}</text>}
+          <path d="M184 104V140" className="fig-comp" strokeWidth="4" />
+          <path d="M184 112L200 96V92M184 132L200 148V160" className="fig-comp" />
+          <path d="M40 122H84M128 122H184" className="fig-wire" />
+          <path d={resH(84, 122)} className="fig-comp" />
+          <text x="106" y="108" className="fig-small" textAnchor="middle">{si(rb, 'Ω')}</text>
+          <text x="30" y="126" className="fig-label" textAnchor="end">{vin}V</text>
+          <path d="M186 160H214" className="fig-ground" />
+          {s.state === 'active' && <circle cx="192" cy="122" r="22" className="heat" />}
+        </svg>
+        <div className="lab-readouts">
+          <Readout label={`تيار الحمل (يحتاج ${si(s.need, 'A')})`} value={si(s.ic, 'A')} tone={s.state === 'sat' ? 'ok' : s.state === 'active' ? 'warn' : 'main'} />
+          <Readout label="Vce" value={`${s.vce.toFixed(2)} V`} />
+          <Readout label="حرارة الترانزستور" value={si(s.p, 'W')} tone={s.state === 'active' ? 'warn' : undefined} />
+        </div>
+      </div>
+      <p className={`lab-status ${msg.tone}`}>{bidi(msg.text)}</p>
+      {pinTooHigh && <p className="lab-status warn">{bidi(`تيار القاعدة ${si(s.ib, 'A')}: كبير على مخرج متحكّم (عادةً لا يتجاوز حوالي 20 mA). كبّر Rb.`)}</p>}
+      <div className="lab-equation" dir="ltr">
+        Ib = ({vin} − 0.7) ÷ {si(rb, 'Ω')} = {si(s.ib, 'A')} · β×Ib = {si(Number(beta) * s.ib, 'A')}
+      </div>
+      <div className="lab-controls">
+        <div className="lab-row">
+          <Segmented label="جهد الدخل" value={vin} options={[['0', '0 V'], ['3.3', '3.3 V'], ['5', '5 V']]} onChange={touch(setVin)} />
+          <Segmented label="β" value={beta} options={[['110', 'β أسوأ حالة 110'], ['300', 'β نموذجي 300']]} onChange={touch(setBeta)} />
+        </div>
+        <Segmented label="الحمل" value={load} options={(Object.keys(LOADS) as LoadKey[]).map((k) => [k, LOADS[k].name])} onChange={touch(setLoad)} />
+        <RSlider label="مقاوم القاعدة Rb" value={rb} onChange={touch(setRb)} range={E12.filter((x) => x >= 100 && x <= 100000)} />
+      </div>
+      {goal?.type === 'bjt-saturated-worst' && (
+        <p className={`lab-goal ${reached ? 'done' : ''}`}>
+          {reached ? <IconCheck size={18} /> : null}
+          الهدف: ترانزستور مُشبع مع β = 110، دون تجاوز تيار مخرج المتحكّم.
+        </p>
+      )}
     </div>
   );
 }

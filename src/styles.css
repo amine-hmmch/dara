@@ -693,3 +693,28 @@ button.stat:hover { border-color: var(--teal); }
 .update-text span { font-size: 14px; color: var(--ink-2); }
 .update-actions { display: flex; gap: 8px; }
 .update-actions a { text-decoration: none; }
+.fig-lcd { fill: #C8D6B4; stroke: #2E2E2E; stroke-width: 3; }
+.fig-lcd-text { fill: #1D2A17; font: 700 17px ui-monospace, Menlo, Consolas, monospace; }
+.fig-knob { fill: var(--surface-2); stroke: var(--ink-2); stroke-width: 2; }
+.fig-led-on { fill: var(--ok); }
+.fig-led-off { fill: var(--line); }
+.fig-term-red { fill: #D0312D; }
+.fig-term-black { fill: #2A2A2A; }
+.fig-resbody { fill: #E8D5B0; stroke: var(--copper); stroke-width: 1.5; }
+.fig-diodebody { fill: #2A2A2A; }
+.fig-band { fill: #D9D9D9; }
+.fig-link { fill: none; stroke: var(--ink-3); stroke-width: 1.5; stroke-dasharray: 4 4; }
+
+/* labs added in level 2 */
+.lab-readouts.row { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+.swatch-row { display: grid; gap: 6px; }
+.swatches { display: flex; flex-wrap: wrap; gap: 6px; direction: ltr; }
+.swatch { width: 34px; height: 34px; border-radius: 10px; border: 2px solid rgb(0 0 0 / .12); }
+.swatch.on { outline: 3px solid var(--teal); outline-offset: 2px; }
+.challenge { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.chart-grid { stroke: var(--line); stroke-width: 1; }
+.chart-line { fill: none; stroke: var(--teal); stroke-width: 3; }
+.chart-cursor { stroke: var(--amber-d); stroke-width: 1.5; stroke-dasharray: 4 3; }
+.chart-dot { fill: var(--amber); stroke: var(--amber-d); stroke-width: 2; }
+.heat { fill: #F08C78; opacity: .35; }
+@media (prefers-reduced-motion: no-preference) { .heat { animation: heat 1.4s ease-in-out infinite; } @keyframes heat { 50% { opacity: .15; } } }

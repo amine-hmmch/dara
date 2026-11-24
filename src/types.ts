@@ -17,9 +17,15 @@ export type FigureId =
   | 'meter-voltage'
   | 'meter-current'
   | 'si-ladder'
-  | 'kcl';
+  | 'kcl'
+  | 'psu'
+  | 'color-code'
+  | 'relay-flyback'
+  | 'diode'
+  | 'npn-switch'
+  | 'mosfet-switch';
 
-export type LabId = 'ohm' | 'led' | 'series-parallel' | 'multimeter';
+export type LabId = 'ohm' | 'led' | 'series-parallel' | 'multimeter' | 'color-code' | 'rc' | 'transistor';
 
 export type Tier = 'sim' | 'A' | 'B';
 
@@ -73,7 +79,9 @@ export type NumericStep = {
 
 export type LabGoal =
   | { type: 'led-current'; min: number; max: number }
-  | { type: 'meter-correct'; quantity: 'V' | 'A' | 'R' };
+  | { type: 'meter-correct'; quantity: 'V' | 'A' | 'R' }
+  | { type: 'color-streak'; count: number }
+  | { type: 'bjt-saturated-worst' };
 
 export type LabStep = {
   kind: 'lab';

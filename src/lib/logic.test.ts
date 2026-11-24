@@ -199,3 +199,35 @@ describe('Android update check', () => {
     expect(isNewer(5, 0)).toBe(false); // local/dev build never nags
   });
 });
+
+import { bandsFor, bjtSwitch, parseOhms } from '../labs/Labs';
+describe('level 2 lab models', () => {
+  it('parses resistor values the way people write them', () => {
+    expect(parseOhms('4700')).toBe(4700);
+    expect(parseOhms('4.7k')).toBe(4700);
+    expect(parseOhms('4,7 k')).toBe(4700);
+    expect(parseOhms('1M')).toBe(1e6);
+    expect(parseOhms('220Ω')).toBe(220);
+    expect(Number.isNaN(parseOhms('abc'))).toBe(true);
+  });
+
+  it('turns every E12 value from 10 Ω to 1 MΩ into colour bands and back', () => {
+    for (const r of [10, 47, 220, 4700, 10000, 82000, 1000000]) {
+      const [a, b, m] = bandsFor(r);
+      expect((a * 10 + b) * 10 ** m).toBeCloseTo(r, 6);
+      expect(a).toBeGreaterThan(0);
+    }
+  });
+
+  it('models the BJT switch: off, active (hot) and saturated', () => {
+    const relay = { rl: 160, vd: 0 };
+    expect(bjtSwitch(0, 1000, 110, relay).state).toBe('off');
+    const weak = bjtSwitch(5, 47000, 110, relay); // Ib ≈ 91 µA → βIb ≈ 10 mA < 54 mA
+    expect(weak.state).toBe('active');
+    expect(weak.p).toBeGreaterThan(0.02);
+    const good = bjtSwitch(5, 820, 110, relay); // Ib ≈ 5.2 mA → βIb ≈ 577 mA ≫ 54 mA
+    expect(good.state).toBe('sat');
+    expect(good.vce).toBeCloseTo(0.2);
+    expect(good.ic).toBeCloseTo((9 - 0.2) / 160);
+  });
+});

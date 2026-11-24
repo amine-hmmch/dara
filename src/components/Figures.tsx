@@ -187,6 +187,127 @@ export function Figure({ fig }: { fig: FigureId }) {
           <text x="262" y="124" className="fig-note" textAnchor="middle" direction="rtl">التدفق = التيار</text>
         </Frame>
       );
+    case 'psu':
+      return (
+        <Frame label="مصدر تغذية مختبري" h={170}>
+          <rect x="30" y="16" width="260" height="138" rx="14" className="fig-box" />
+          <rect x="48" y="32" width="104" height="40" rx="6" className="fig-lcd" />
+          <rect x="168" y="32" width="104" height="40" rx="6" className="fig-lcd" />
+          <text x="100" y="59" className="fig-lcd-text" textAnchor="middle">9.00 V</text>
+          <text x="220" y="59" className="fig-lcd-text" textAnchor="middle">0.050 A</text>
+          <circle cx="100" cy="104" r="16" className="fig-knob" />
+          <circle cx="220" cy="104" r="16" className="fig-knob" />
+          <path d="M100 104L108 92M220 104L210 93" className="fig-wire" />
+          <text x="100" y="140" className="fig-small" textAnchor="middle">VOLTAGE</text>
+          <text x="220" y="140" className="fig-small" textAnchor="middle">CURRENT LIMIT</text>
+          <circle cx="160" cy="96" r="5" className="fig-led-on" />
+          <circle cx="160" cy="116" r="5" className="fig-led-off" />
+          <text x="150" y="100" className="fig-small" textAnchor="end">CV</text>
+          <text x="150" y="120" className="fig-small" textAnchor="end">CC</text>
+          <circle cx="268" cy="104" r="7" className="fig-term-red" />
+          <circle cx="268" cy="128" r="7" className="fig-term-black" />
+          <text x="282" y="108" className="fig-label">+</text>
+          <text x="282" y="132" className="fig-label">−</text>
+        </Frame>
+      );
+    case 'color-code': {
+      const bands = [['#E8C200', '4'], ['#7B3FA0', '7'], ['#D0312D', '×100'], ['#C9A227', '±5 %']];
+      return (
+        <Frame label="مقاوم بأربع حلقات" h={130}>
+          <path d="M20 54H70M250 54H300" className="fig-wire" />
+          <rect x="70" y="34" width="180" height="40" rx="18" className="fig-resbody" />
+          {bands.map(([c, l], i) => (
+            <g key={i}>
+              <rect x={i === 3 ? 214 : 96 + i * 28} y="34" width="14" height="40" fill={c} />
+              <text x={(i === 3 ? 214 : 96 + i * 28) + 7} y="98" className="fig-small" textAnchor="middle">{l}</text>
+            </g>
+          ))}
+          <text x="160" y="122" className="fig-label" textAnchor="middle">47 × 100 = 4.7 kΩ ±5 %</text>
+        </Frame>
+      );
+    }
+    case 'diode':
+      return (
+        <Frame label="رمز الثنائي وجسمه" h={130}>
+          <path d="M20 40H80M120 40H180" className="fig-wire" />
+          <path d="M80 22V58L118 40Z" className="fig-comp" />
+          <path d="M120 22V58" className="fig-comp" strokeWidth="3" />
+          <text x="60" y="76" className="fig-label" textAnchor="middle">A</text>
+          <text x="140" y="76" className="fig-label" textAnchor="middle">K</text>
+          <Arrow d="M64 100H136" />
+          <text x="100" y="122" className="fig-small" textAnchor="middle">I</text>
+          <path d="M200 40H222M298 40H310" className="fig-wire" />
+          <rect x="222" y="28" width="76" height="24" rx="6" className="fig-diodebody" />
+          <rect x="280" y="28" width="9" height="24" className="fig-band" />
+          <text x="284" y="76" className="fig-small" textAnchor="middle">K</text>
+        </Frame>
+      );
+    case 'relay-flyback':
+      return (
+        <Frame label="مرحّل مع ثنائي حماية" h={180}>
+          <text x="70" y="18" className="fig-small" textAnchor="middle">+9 V</text>
+          <path d="M70 24V44M70 106V124" className="fig-wire" />
+          <path d="M60 44h20v62h-20z" className="fig-comp" />
+          <path d="M62 52q12 4 0 8q12 4 0 8q12 4 0 8q12 4 0 8q12 4 0 8" className="fig-comp" />
+          <path d="M70 34H112V58M112 94V116H70" className="fig-wire" />
+          <path d="M102 94H122L112 66Z" className="fig-comp" />
+          <path d="M102 62H122" className="fig-comp" strokeWidth="3" />
+          <text x="130" y="84" className="fig-small">1N4007</text>
+          <text x="70" y="142" className="fig-small" textAnchor="middle">→ transistor (C)</text>
+          <path d="M80 75H200" className="fig-link" />
+          <text x="230" y="52" className="fig-label">NC</text>
+          <text x="230" y="112" className="fig-label">NO</text>
+          <text x="200" y="160" className="fig-label" textAnchor="middle">COM</text>
+          <circle cx="222" cy="48" r="3.5" className="fig-dot" />
+          <circle cx="222" cy="108" r="3.5" className="fig-dot" />
+          <circle cx="200" cy="140" r="3.5" className="fig-dot" />
+          <path d="M200 140L220 52" className="fig-comp" strokeWidth="3" />
+        </Frame>
+      );
+    case 'npn-switch':
+      return (
+        <Frame label="ترانزستور NPN كمفتاح" h={190}>
+          <text x="200" y="16" className="fig-small" textAnchor="middle">+9 V</text>
+          <path d="M200 22V34M200 74V92" className="fig-wire" />
+          <rect x="182" y="34" width="36" height="40" rx="6" className="fig-box-strong" />
+          <text x="200" y="59" className="fig-small" textAnchor="middle">LOAD</text>
+          <path d="M184 112V148" className="fig-comp" strokeWidth="4" />
+          <path d="M184 120L200 104V92M184 140L200 156V176" className="fig-comp" />
+          <path d="M192 152L200 156L196 148" className="fig-comp" />
+          <path d="M60 130H96M140 130H184" className="fig-wire" />
+          <path d={resH(96, 130)} className="fig-comp" />
+          <text x="118" y="116" className="fig-label" textAnchor="middle">Rb</text>
+          <text x="44" y="134" className="fig-label" textAnchor="end">Vin</text>
+          <text x="214" y="104" className="fig-small">C</text>
+          <text x="172" y="126" className="fig-small" textAnchor="end">B</text>
+          <text x="214" y="164" className="fig-small">E</text>
+          <path d="M186 176H214" className="fig-ground" />
+          <text x="226" y="180" className="fig-small">0 V</text>
+        </Frame>
+      );
+    case 'mosfet-switch':
+      return (
+        <Frame label="MOSFET كمفتاح" h={190}>
+          <text x="210" y="16" className="fig-small" textAnchor="middle">+12 V</text>
+          <path d="M210 22V34M210 74V100" className="fig-wire" />
+          <rect x="192" y="34" width="36" height="40" rx="6" className="fig-box-strong" />
+          <text x="210" y="59" className="fig-small" textAnchor="middle">LOAD</text>
+          <path d="M184 106V150" className="fig-comp" strokeWidth="3" />
+          <path d="M192 102V114M192 122V134M192 142V154" className="fig-comp" strokeWidth="4" />
+          <path d="M192 108H210V100M192 148H210V176M192 128H204" className="fig-comp" />
+          <path d="M40 128H70M114 128H150V128H184" className="fig-wire" />
+          <path d={resH(70, 128)} className="fig-comp" />
+          <text x="92" y="114" className="fig-small" textAnchor="middle">100 Ω</text>
+          <path d="M150 128V136" className="fig-wire" />
+          <path d={resV(150, 136, 30)} className="fig-comp" />
+          <path d="M150 166V176" className="fig-wire" />
+          <text x="138" y="156" className="fig-small" textAnchor="end">10 kΩ</text>
+          <text x="32" y="132" className="fig-label" textAnchor="end">G</text>
+          <text x="222" y="104" className="fig-small">D</text>
+          <text x="222" y="170" className="fig-small">S</text>
+          <path d="M140 176H220" className="fig-ground" />
+        </Frame>
+      );
     case 'body-path':
       return (
         <Frame label="مسار التيار عبر الجسم" h={190}>
