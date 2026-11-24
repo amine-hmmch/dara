@@ -682,3 +682,14 @@ button.stat:hover { border-color: var(--teal); }
 .app-actions a { text-decoration: none; }
 .app-note { grid-column: 1 / -1; font-size: 14px; color: var(--ink-2); background: var(--surface-2); border-radius: var(--r); padding: 8px 12px; }
 @media (max-width: 520px) { .app-card { grid-template-columns: minmax(0, 1fr); } }
+
+/* ───────────── update banner (Android app) */
+.update-banner {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 12px 14px; margin-bottom: 22px;
+  background: var(--amber-l); border: 1.5px solid var(--amber); border-radius: 18px; padding: 12px 16px;
+}
+.update-text { flex: 1 1 220px; display: grid; line-height: 1.5; }
+.update-text strong { font-family: var(--display); font-size: 18px; }
+.update-text span { font-size: 14px; color: var(--ink-2); }
+.update-actions { display: flex; gap: 8px; }
+.update-actions a { text-decoration: none; }

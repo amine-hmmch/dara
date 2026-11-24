@@ -183,3 +183,19 @@ describe('mastery and unlock rules', () => {
     expect(ok.xp).toBe(0);
   });
 });
+
+import { buildFromTag, isNewer } from './platform';
+describe('Android update check', () => {
+  it('reads the build number from release tags', () => {
+    expect(buildFromTag('app-v1.0.17')).toBe(17);
+    expect(buildFromTag('v2')).toBeNull();
+    expect(buildFromTag(undefined)).toBeNull();
+  });
+  it('reports an update only when the published build is newer than a real installed build', () => {
+    expect(isNewer(5, 3)).toBe(true);
+    expect(isNewer(3, 3)).toBe(false);
+    expect(isNewer(2, 3)).toBe(false);
+    expect(isNewer(null, 3)).toBe(false);
+    expect(isNewer(5, 0)).toBe(false); // local/dev build never nags
+  });
+});

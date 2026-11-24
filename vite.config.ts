@@ -6,6 +6,8 @@ import { viteSingleFile } from 'vite-plugin-singlefile';
 export default defineConfig(({ mode }) => ({
   plugins: mode === 'single' ? [react(), viteSingleFile()] : [react()],
   base: './',
+  // Build number stamped by CI (GitHub run number); 0 for local builds.
+  define: { __APP_BUILD__: JSON.stringify(Number(process.env.VERSION_CODE ?? 0)) },
   build: { outDir: mode === 'single' ? 'dist-single' : 'dist' },
   test: { globals: true, environment: 'node' },
 }));

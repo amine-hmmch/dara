@@ -6,7 +6,7 @@ import type { LabId } from '../types';
 import { type State, emptyState, sanitize } from '../lib/progress';
 import type { StoreKind } from '../lib/storage';
 import { Bubble, Lido, Logo } from './Mascot';
-import { APK_URL, RELEASES_URL, isNativeApp, useInstallPrompt } from '../lib/platform';
+import { APK_BUILD_LABEL, APK_URL, RELEASES_URL, checkForUpdate, isNativeApp, useInstallPrompt } from '../lib/platform';
 import { Ltr, bidi } from './Rich';
 import {
   IconArrowNext, IconArrowPrev, IconBook, IconChat, IconCloud, IconFlask, IconLink, IconSearch, IconShield, IconWarn,
@@ -16,17 +16,24 @@ import {
 
 export function AppCard() {
   const install = useInstallPrompt();
+  const [check, setCheck] = useState<'idle' | 'busy' | 'none' | number>('idle');
   if (isNativeApp()) {
     return (
       <section className="card app-card">
         <span className="app-icon"><Logo size={64} /></span>
         <div>
           <h2>تطبيق أندرويد</h2>
-          <p className="muted">أنت تستعمل التطبيق. للتحديث، حمّل أحدث نسخة وثبّتها فوق الحالية؛ يبقى تقدّمك محفوظًا.</p>
+          <p className="muted">النسخة <bdi dir="ltr">{APK_BUILD_LABEL}</bdi>. يتحقق التطبيق من التحديثات عند فتحه، ويُظهر تنبيهًا إذا وُجدت نسخة أحدث.</p>
         </div>
         <div className="app-actions">
-          <a className="btn-secondary" href={RELEASES_URL} target="_blank" rel="noreferrer">صفحة أحدث نسخة</a>
+          <button type="button" className="btn-secondary" disabled={check === 'busy'}
+            onClick={async () => { setCheck('busy'); setCheck((await checkForUpdate(Date.now(), true)) ?? 'none'); }}>
+            {check === 'busy' ? 'جارٍ التحقق…' : 'تحقّق من التحديثات'}
+          </button>
+          {typeof check === 'number' && <a className="btn-primary" href={APK_URL} target="_blank" rel="noreferrer">حمّل النسخة <bdi dir="ltr">1.0.{check}</bdi></a>}
+          <a className="btn-ghost" href={RELEASES_URL} target="_blank" rel="noreferrer">صفحة الإصدارات</a>
         </div>
+        {check === 'none' && <p className="app-note" role="status">لديك أحدث نسخة، أو تعذّر الوصول إلى GitHub الآن.</p>}
       </section>
     );
   }

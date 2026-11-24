@@ -11,6 +11,7 @@ import { LAB_INFO } from './labs/Labs';
 import { Lido, Logo } from './components/Mascot';
 import { IconLibrary, IconLock, IconPath, IconReview, IconUser } from './components/Icons';
 import type { LabId } from './types';
+import { APK_URL, useUpdateAvailable } from './lib/platform';
 
 const useHash = () => {
   const read = () => decodeURIComponent(location.hash.replace(/^#/, '')) || 'home';
@@ -171,13 +172,34 @@ export default function App() {
           {state.profile.name.trim() ? state.profile.name.trim().slice(0, 1) : <IconUser size={20} />}
         </button>
       </header>
-      <main className="main">{view}</main>
+      <main className="main">
+        <UpdateBanner />
+        {view}
+      </main>
       <nav className="bottombar" aria-label="التنقل">
         <Tab on={tab === 'home'} onClick={() => go('home')} icon={<IconPath size={22} />} label="المسار" />
         <Tab on={tab === 'review'} onClick={() => go('review')} icon={<IconReview size={22} />} label="المراجعة" badge={due.length} />
         <Tab on={tab === 'library'} onClick={() => go('library')} icon={<IconLibrary size={22} />} label="المكتبة" />
         <Tab on={tab === 'profile'} onClick={() => go('profile')} icon={<IconUser size={22} />} label="حسابي" />
       </nav>
+    </div>
+  );
+}
+
+function UpdateBanner() {
+  const [latest, dismiss] = useUpdateAvailable();
+  if (latest === null) return null;
+  return (
+    <div className="update-banner" role="status">
+      <Logo size={36} />
+      <div className="update-text">
+        <strong>نسخة جديدة من دارة متوفرة</strong>
+        <span>حمّلها وثبّتها فوق الحالية؛ يبقى تقدّمك محفوظًا. (<bdi dir="ltr">1.0.{latest}</bdi>)</span>
+      </div>
+      <div className="update-actions">
+        <a className="btn-primary" href={APK_URL} target="_blank" rel="noreferrer">حمّل التحديث</a>
+        <button type="button" className="btn-ghost" onClick={dismiss}>لاحقًا</button>
+      </div>
     </div>
   );
 }
